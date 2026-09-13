@@ -1,14 +1,58 @@
 import asyncio
 import datetime
-from aiogram import Bot, Dispatcher
-from aiogram.filters import CommandStart, Command
+from aiogram import Bot, Dispatcher, F
+from aiogram.filters import CommandStart, Command, setrole, mute, ban, kick, warn, info
 from aiogram.types import Message
 
 
-TOKEN = "8646453142:AAFWIT1Adxm2v4jq0Ycaf11KJ6hWB_F_KLU"
+TOKEN = "c"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+ROLES = {}
+OWNER_ID = 0
+LEVELS = {
+    "user": 0,
+    "moder": 25,
+    "admin": 50,
+    "owner": 100,
+
+}
+
+def get_level(user_Id):
+    if user_Id == OWNER_ID:
+        return 100
+    return ROLES.get(user_Id, 0)
+
+def is_admin(user_id):
+    return get_level(user_id) >= 50
+
+def is_owner(user_id):
+    return user_id == OWNER_ID
+
+@dp.message(Command(info))
+async def info_handler(message: Message):
+    user_id = message.from_user.id
+    level = get_level(user_id)
+    if level >= 100:
+        role = "Владелец"
+    elif level >+ 50:
+        role = "Администратор"
+    elif level >= 25:
+        role = "Модератор"
+    else:
+        role = "Пользователь"
+
+    await message.answer(
+        f"{message.from_user.fullname}\n"
+        f"ID: {user_id}\n"
+        f"Роль: {role}"
+    )
+
+
+
+
 
 first = {"/info", '/time', "/weather"}
 
@@ -18,7 +62,7 @@ async def start_handler(message: Message):
 
 @dp.message(Command("help"))
 async def help_handler(message: Message):
-    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n''/nicklist - посмотреть ники участников\n''/nick - установить ник участнику беседы\n''/mute - выдать мут участнику беседы\n''/warn - выдать предупреждение участнику беседы\n''/kick - кикнуть участника беседы\n''/ban - забанить участника беседы\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/time - узнать сколько сейчас времени\n''/greetings - приветствие в беседе\n''/addgreetings - установить приветствие в беседе\n''/rules - правила беседы\n''/addrules - установить правила\n''/weather - узнать какая сейчас погода\n''/help - список команд')
+    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию о себе\n"'/nicklist - посмотреть ники участников\n''/nick - установить ник участнику беседы\n''/mute - выдать мут участнику беседы\n''/warn - выдать предупреждение участнику беседы\n''/kick - кикнуть участника беседы\n''/ban - забанить участника беседы\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/time - узнать сколько сейчас времени\n''/greetings - приветствие в беседе\n''/addgreetings - установить приветствие в беседе\n''/rules - правила беседы\n''/addrules - установить правила\n''/weather - узнать какая сейчас погода\n''/help - список команд')
 
 @dp.message(Command("time"))
 async def time_handler(message: Message):
@@ -72,7 +116,13 @@ async def addgreetings_handler(message: Message):
 
 @dp.message(Command('rules'))
 async def rules_handler(message: Message):
-    await message.answer("Правила не установлены.\n\nЧтобы установить правила используйте /addgreetings")
+    await message.answer("Правила не установлены.\n\nЧтобы установить правила используйте /addrules")
+
+@dp.message(Command('addrules'))
+async def addgreetings_handler(message: Message):
+    await message.answer("У вас нет прав на это действие.")
+
+
 
 @dp.message()
 async def echo_handler(message: Message):
