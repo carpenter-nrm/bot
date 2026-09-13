@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import CommandStart, Command, setrole, mute, ban, kick, warn, info
+from aiogram.filters import CommandStart, Command, setrole, mute, ban, kick, warn
 from aiogram.types import Message
 
 
@@ -31,7 +31,7 @@ def is_admin(user_id):
 def is_owner(user_id):
     return user_id == OWNER_ID
 
-@dp.message(Command(info))
+@dp.message(Command("info"))
 async def info_handler(message: Message):
     user_id = message.from_user.id
     level = get_level(user_id)
@@ -136,4 +136,5 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
+    
     
