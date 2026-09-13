@@ -245,8 +245,8 @@ async def addgreetings_handler(message: Message):
      
 
 @dp.message()
-async def echo_handler(message: Message):
-    await message.answer("К сожалению я тебя не понимаю, используй /help")
+async def unknown_handler(message: Message):
+    pass
 
 async def main():
     print("Бот запущен...")
