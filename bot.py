@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import CommandStart, Command, setrole, mute, ban, kick, warn
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
 
@@ -50,6 +50,26 @@ async def info_handler(message: Message):
         f"Роль: {role}"
     )
 
+@dp.message(Command("setrole"))
+async def setrole_handler(message: Message):
+    if not is_owner(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return
+    parts = message.text.split()
+    if len(parts) != 3:
+        await message.answer("Формат: /setrole ID роль")
+        return
+    try:
+        target_id = int(parts[1])
+        role = parts[2]
+    except ValueError:
+        await message.answer("ID должен быть числом\n\nЧтобы узнать ID используйте /info")
+        return
+    if role not in LEVELS:
+        await message.answer(f"Роли: {', ' .join(LEVELS.keys())}")
+        return
+    ROLES[target_id] = LEVELS[role]
+    await message.answer(f"Пользователь {target_id} теперь {role} (уровень {LEVELS[role]})")
 
 
 
@@ -136,5 +156,4 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
-    
     
