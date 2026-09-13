@@ -117,7 +117,7 @@ async def mute_handler(message: Message):
     if len(parts) != 4:
         await message.answer("Формат: /mute username время причина")
         return 
-    await message.answer("Пользователь получил мут")
+    await message.answer("Пользователь успешно получил мут\n\nЧтобы снять мут используйте /unmute")
 
 @dp.message(Command('nicklist'))
 async def nicklist_handler(message: Message):
@@ -136,6 +136,7 @@ async def kick_handler(message: Message):
     if len(parts) != 3:
         await message.answer("Формат: /kick username причина")
         return
+    await message.answer("Пользователь был успешно исключен из беседы")
 
 @dp.message(Command('ban'))
 async def ban_handler(message: Message):
@@ -146,6 +147,7 @@ async def ban_handler(message: Message):
     if len(parts) != 4:
         await message.answer("Формат: /ban username время причина")
         return
+    await message.answer("Пользователь был успешно забанен\n\nЧтобы разбанить используйте /unban")
 
 @dp.message(Command('warn'))
 async def warn_handler(message: Message):
@@ -157,7 +159,39 @@ async def warn_handler(message: Message):
      if len(parts) != 3:
         await message.answer("Формат: /warn username причина")
         return
-     await message.answer("Пользователь имеет 1/3 предупреждений")
+     await message.answer("Пользователь получил предупреждение\n\nЧтобы снять предупреждение используйте /unwarn")
+
+@dp.message(Command('unwarn'))
+async def unwarn_handler(message: Message):
+     if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return 
+     elif is_admin(message.from_user.id):
+         await message.answer('Список пользователей с варнами:\n\n')
+
+@dp.message(Command('unban'))
+async def unban_handler(message: Message):
+     if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return 
+     elif is_admin(message.from_user.id):
+         await message.answer('Вы успешно разбанили пользователя')
+
+@dp.message(Command('banlist'))
+async def banlist_handler(message: Message):
+     if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return 
+     elif is_admin(message.from_user.id):
+         await message.answer('Список пользователей находящихся в бане:\b\n')
+
+@dp.message(Command('mutelist'))
+async def mutelist_handler(message: Message):
+     if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return 
+     elif is_admin(message.from_user.id):
+         await message.answer('Список пользователей находящихся в муте:\n\n')
 
 @dp.message(Command('greetings'))
 async def greetings_handler(message: Message):
@@ -181,9 +215,6 @@ async def addgreetings_handler(message: Message):
         return
      await message.answer('Правила успешно установлены')
      
-        
-
-
 
 @dp.message()
 async def echo_handler(message: Message):
