@@ -11,7 +11,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 ROLES = {}
-OWNER_ID = 0
+OWNER_ID = 732840192
 LEVELS = {
     "user": 0,
     "moder": 25,
