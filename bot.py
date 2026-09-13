@@ -161,8 +161,8 @@ async def warn_handler(message: Message):
         return
      await message.answer("Пользователь получил предупреждение\n\nЧтобы снять предупреждение используйте /unwarn")
 
-@dp.message(Command('unwarn'))
-async def unwarn_handler(message: Message):
+@dp.message(Command('warnlist'))
+async def warnlist_handler(message: Message):
      if not is_admin(message.from_user.id):
         await message.answer("У вас нет прав не выполнение этой команды.")
         return 
@@ -174,6 +174,20 @@ async def unban_handler(message: Message):
         await message.answer("У вас нет прав не выполнение этой команды.")
         return
      await message.answer('Вы успешно разбанили пользователя')
+
+@dp.message(Command('unwarn'))
+async def unwarn_handler(message: Message):
+     if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return
+     await message.answer('Вы успешно сняли предупреждение пользователю')
+
+@dp.message(Command('unmute'))
+async def unmute_handler(message: Message):
+     if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав не выполнение этой команды.")
+        return
+     await message.answer('Вы успешно сняли бан чата с пользователя')
 
 @dp.message(Command('banlist'))
 async def banlist_handler(message: Message):
