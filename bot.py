@@ -1,8 +1,9 @@
 import asyncio
 import datetime
+from datetime import timedelta
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, ChatPermissions
 
 
 TOKEN = "8646453142:AAFWIT1Adxm2v4jq0Ycaf11KJ6hWB_F_KLU"
@@ -108,16 +109,33 @@ async def time_handler(message: Message):
     text += f"Время: {now.strftime('%H:%M')}"
     await message.answer(text)
 
-@dp.message(Command('mute'))
+@dp.message(F.text.starswith("/mute"))
 async def mute_handler(message: Message):
     if not is_admin(message.from_user.id):
         await message.answer("У вас нет прав не выполнение этой команды.")
         return
+    if message.chat.type == "private":
+        await message.answer("Муты можно выдавать только в беседах")
+        return
+    if not message.reply_to_message:
+        await message.answer("Ответь на сообщение того, кому хочешь выдать мут")
+        return
+    target = message.reply_to_message.from_user
     parts = message.text.split()
-    if len(parts) != 4:
-        await message.answer("Формат: /mute username время причина")
-        return 
-    await message.answer("Пользователь успешно получил мут\n\nЧтобы снять мут используйте /unmute")
+    minutes = 10
+    if len(parts) >= 2:
+        try:
+            minutes = int(parts[1])
+        except ValueError:
+            pass
+        until = datetime.datetime.now() + timedelta(minutes=minutes)
+        await bot.restrict_chat_member(
+            chat_id=message.chat.id,
+            user_id=target.id,
+        permissions=ChatPermissions(can_send_messages=False),
+            until_date=until
+        )
+        await message.answer(f"{target.full_name} получил мут на {minutes} мин.")
 
 @dp.message(Command('nicklist'))
 async def nicklist_handler(message: Message):
