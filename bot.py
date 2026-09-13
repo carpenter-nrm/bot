@@ -116,7 +116,8 @@ async def mute_handler(message: Message):
     parts = message.text.split()
     if len(parts) != 4:
         await message.answer("Формат: /mute username время причина")
-        return
+        return 
+    await message.answer("Пользователь получил мут")
 
 @dp.message(Command('nicklist'))
 async def nicklist_handler(message: Message):
@@ -151,11 +152,12 @@ async def warn_handler(message: Message):
      if not is_admin(message.from_user.id):
         await message.answer("У вас нет прав не выполнение этой команды.")
         return 
-     await message.answer("Пользователь имеет 1/3 предупреждений")
+     
      parts = message.text.split()
      if len(parts) != 3:
         await message.answer("Формат: /warn username причина")
         return
+     await message.answer("Пользователь имеет 1/3 предупреждений")
 
 @dp.message(Command('greetings'))
 async def greetings_handler(message: Message):
