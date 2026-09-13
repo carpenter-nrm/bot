@@ -37,7 +37,7 @@ async def info_handler(message: Message):
     level = get_level(user_id)
     if level >= 100:
         role = "Владелец"
-    elif level >+ 50:
+    elif level >= 50:
         role = "Администратор"
     elif level >= 25:
         role = "Модератор"
