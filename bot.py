@@ -45,7 +45,7 @@ async def info_handler(message: Message):
         role = "Пользователь"
 
     await message.answer(
-        f"{message.from_user.fullname}\n"
+        f"{message.from_user.full_name}\n"
         f"ID: {user_id}\n"
         f"Роль: {role}"
     )
@@ -71,7 +71,17 @@ async def setrole_handler(message: Message):
     ROLES[target_id] = LEVELS[role]
     await message.answer(f"Пользователь {target_id} теперь {role} (уровень {LEVELS[role]})")
 
-
+@dp.message(Command("test"))
+async def test_handler(message: Message):
+    uid = message.from_user.id
+    await message.answer(
+        f"Твой ID: {uid} {type(uid).__name__}\n"
+        f"OWNER_ID: {OWNER_ID} {type(OWNER_ID).__name__}\n"
+        f"Уровень: {get_level(uid)}\n"
+        f"is_owner: {is_owner(uid)}\n"
+        f"is_admin: {is_admin(uid)}"
+        )
+   
 
 
 first = {"/info", '/time', "/weather"}
