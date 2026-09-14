@@ -122,7 +122,7 @@ async def mute_handler(message: Message):
         return
     target = message.reply_to_message.from_user
     parts = message.text.split()
-    minutes = 10
+    minutes = 120
     if len(parts) >= 2:
         try:
             minutes = int(parts[1])
@@ -136,6 +136,21 @@ async def mute_handler(message: Message):
             until_date=until
         )
         await message.answer(f"{target.full_name} получил мут на {minutes} мин.")
+
+@dp.message(F.Text.startswith("/unmute"))
+async def unmute_handler(message: Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("У вас нет прав на выполнение этой команды")
+        return
+    if message.chat.type == "private":
+        await message.answer("Снять мут можно только в беседе")
+        return
+    if not message.reply_to_message:
+        await message.answer("Ответь на сообщение того, кому хочешь выдать мут")
+        return
+    target = message.reply_to_message.from_user
+    await bot.restrict_chat_member(chat_id=message.chat.id, user_id=target.id, permissions=ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True, can_add_web_page_previews=True))
+    await message.answer(f"{target.full_name} получил разбан чата")
 
 @dp.message(Command('nicklist'))
 async def nicklist_handler(message: Message):
