@@ -45,7 +45,7 @@ async def info_handler(message: Message):
     username = message.reply_to_message.from_user.username
     id = message.reply_to_message.from_user.id
 
-    level = get_level(user_id)
+    level = get_level(id)
     if level >= 100:
         role = "Владелец"
     elif level >= 50:
@@ -57,12 +57,12 @@ async def info_handler(message: Message):
 
     userrole = message.reply_to_message.from_user.role
 
-    await message.answer(
+    await message.reply(
         "Пользователь:\n\n"
         f"Имя: {name}\n"
         f"Username: {username}\n"
         f"ID: {id}\n"
-        f"Роль: {userrole}\n\n"
+        f"Роль: {role}\n\n"
         "Наличие предупреждений: в разработке"
     )
 
