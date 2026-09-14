@@ -215,12 +215,7 @@ async def unwarn_handler(message: Message):
         return
      await message.answer('Вы успешно сняли предупреждение пользователю')
 
-@dp.message(Command('unmute'))
-async def unmute_handler(message: Message):
-     if not is_admin(message.from_user.id):
-        await message.answer("У вас нет прав не выполнение этой команды.")
-        return
-     await message.answer('Вы успешно сняли бан чата с пользователя')
+
 
 @dp.message(Command('banlist'))
 async def banlist_handler(message: Message):
