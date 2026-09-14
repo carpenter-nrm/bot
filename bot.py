@@ -141,7 +141,7 @@ async def mute_handler(message: Message):
         permissions=ChatPermissions(can_send_messages=False),
             until_date=until
         )
-    if len(parts) != 3:
+    if len(parts) > 3:
         await message.answer("Формат: /mute время причина")
         return
     if target.id == message.from_user.id:
@@ -208,7 +208,7 @@ async def kick_handler(message: Message):
         await message.answer("Ответь на сообщение того, кого хочешь кикнуть")
         return
     parts = message.text.split()
-    if len(parts) != 2:
+    if len(parts) > 2:
         await message.answer("Формат: /kick причина")
         return
     target = message.reply_to_message.from_user
@@ -233,14 +233,36 @@ async def ban_handler(message: Message):
         await message.answer("Ответь на сообщение того, кого хочешь забанить")
         return
     parts = message.text.split()
-    if len(parts) != 3:
-        await message.answer("Формат: /ban время причина")
-        return
     target = message.reply_to_message.from_user
     if target.id == message.from_user.id:
         await message.answer("Себя забанить нельзя!")
         return
-    await message.answer("Пользователь был успешно забанен\n\nЧтобы снять бан используйте /unban")
+    parts = message.text.split()
+    until = None
+    days_text = "Навсегда"
+    if len(parts) >= 2:
+        arg = parts[1].lower()
+        try:
+            if arg.endswith("d"):
+                days = int(arg[:-1])
+            else:
+                days = int(arg)
+            if days < 1:
+                days = 1
+                until = datetime.datetime.now() + timedelta(days=days)
+                days_text = f"на {days} дн."
+        except ValueError:
+                await message.answer("Формат: /ban или /ban 3d")
+                return
+        try:
+            await bot.ban_chat_member(
+                chat_id=message.chat.id,
+                user_id=target.id,
+                until_date=until
+                    )
+            await message.answer(f"Пользователь {target.full_name} забанен {days_text}")
+        except Exception as e:
+            await message.answer(f"Ошибка: {e}")
 
 @dp.message(Command('warn'))
 async def warn_handler(message: Message):
@@ -254,7 +276,7 @@ async def warn_handler(message: Message):
         await message.answer("Ответь на сообщение того, кому хочешь выдать варн")
         return
      parts = message.text.split()
-     if len(parts) != 2:
+     if len(parts) > 2:
         await message.answer("Формат: /warn причина")
         return
      target = message.reply_to_message.from_user
