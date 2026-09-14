@@ -1,7 +1,9 @@
 import asyncio
 import datetime
 from datetime import timedelta
-from aiogram import Bot, Dispatcher, F, BaseMiddleware
+from aiogram import Bot, Dispatcher, F, BaseMiddleware, html
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ChatPermissions
 from typing import Callable, Awaitable, Dict, Any
@@ -210,12 +212,7 @@ async def kick_handler(message: Message):
     if target.id == message.from_user.id:
         await message.answer("Себя кикнуть нельзя!")
         return
-    try:
-        await message.bot.ban_chat_member(message.chat.id, target.id)
-        await message.bot.unban_chat_member(message.chat.id, target.id)
-    except Exception as e:
-        await message.answer(f"Не удалось кикнуть пользователя: {e}")
-        return
+    await message.chat.ban(message.chat.id, target.id)
     await message.answer(f"Пользователь {target.full_name} исключен из беседы")
 
 
