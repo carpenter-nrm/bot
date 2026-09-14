@@ -210,7 +210,15 @@ async def kick_handler(message: Message):
     if target.id == message.from_user.id:
         await message.answer("Себя кикнуть нельзя!")
         return
-    await message.answer("Пользователь был успешно исключен из беседы")
+    try:
+        await message.bot.ban_chat_member(message.chat.id, target.id)
+        await message.bot.unban_chat_member(message.chat.id, target.id)
+    except Exception as e:
+        await message.answer(f"Не удалось кикнуть пользователя: {e}")
+        return
+    await message.answer(f"Пользователь {target.full_name} исключен из беседы")
+
+
 
 @dp.message(Command('ban'))
 async def ban_handler(message: Message):
@@ -229,7 +237,7 @@ async def ban_handler(message: Message):
         return
     target = message.reply_to_message.from_user
     if target.id == message.from_user.id:
-        await message.answer("Себя кикнуть нельзя!")
+        await message.answer("Себя забанить нельзя!")
         return
     await message.answer("Пользователь был успешно забанен\n\nЧтобы снять бан используйте /unban")
 
@@ -250,7 +258,7 @@ async def warn_handler(message: Message):
         return
      target = message.reply_to_message.from_user
      if target.id == message.from_user.id:
-        await message.answer("Себя кикнуть нельзя!")
+        await message.answer("Выдать себе варн нельзя!")
         return
      await message.answer("В разработке")
 
