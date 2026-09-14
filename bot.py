@@ -123,7 +123,7 @@ async def mute_handler(message: Message):
     target = message.reply_to_message.from_user
     parts = message.text.split()
     minutes = 120
-    if len(parts) >= 2:
+    if len(parts) >= 3:
         try:
             minutes = int(parts[1])
         except ValueError:
@@ -135,7 +135,10 @@ async def mute_handler(message: Message):
         permissions=ChatPermissions(can_send_messages=False),
             until_date=until
         )
-        await message.answer(f"{target.full_name} получил мут на {minutes} мин.")
+    if len(parts) != 3:
+        await message.answer("Формат: /mute время причина")
+        return
+    await message.answer(f"{target.full_name} получил мут на {minutes} мин.")
 
 @dp.message(F.text.startswith("/unmute"))
 async def unmute_handler(message: Message):
@@ -147,10 +150,6 @@ async def unmute_handler(message: Message):
         return
     if not message.reply_to_message:
         await message.answer("Ответь на сообщение того, кому хочешь снять мут")
-        return
-    parts = message.text.split()
-    if len(parts) != 2:
-        await message.answer("Формат: /mute время")
         return
     target = message.reply_to_message.from_user
     await bot.restrict_chat_member(
