@@ -1,9 +1,10 @@
 import asyncio
 import datetime
 from datetime import timedelta
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher, F, BaseMiddleware
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ChatPermissions
+from typing import Callable, Awaitable, Dict, Any
 
 
 TOKEN = "8646453142:AAFWIT1Adxm2v4jq0Ycaf11KJ6hWB_F_KLU"
@@ -85,17 +86,6 @@ async def setrole_handler(message: Message):
     ROLES[target_id] = LEVELS[role]
     await message.answer(f"Пользователь {target_id} теперь {role} (уровень {LEVELS[role]})")
 
-@dp.message(Command("test"))
-async def test_handler(message: Message):
-    uid = message.from_user.id
-    await message.answer(
-        f"Твой ID: {uid} {type(uid).__name__}\n"
-        f"OWNER_ID: {OWNER_ID} {type(OWNER_ID).__name__}\n"
-        f"Уровень: {get_level(uid)}\n"
-        f"is_owner: {is_owner(uid)}\n"
-        f"is_admin: {is_admin(uid)}"
-        )
-   
 
 
 first = {"/info", '/time', "/weather"}
@@ -134,6 +124,7 @@ async def mute_handler(message: Message):
         await message.answer("Ответь на сообщение того, кому хочешь выдать мут")
         return
     target = message.reply_to_message.from_user
+    
     parts = message.text.split()
     minutes = 120
     if len(parts) >= 3:
@@ -150,6 +141,9 @@ async def mute_handler(message: Message):
         )
     if len(parts) != 3:
         await message.answer("Формат: /mute время причина")
+        return
+    if target.id == message.from_user.id:
+        await message.answer("Выдать себе мут нельзя!")
         return
     await message.answer(f"{target.full_name} получил мут на {minutes} мин.")
 
@@ -180,6 +174,15 @@ async def unmute_handler(message: Message):
 async def nicklist_handler(message: Message):
     await message.answer("Список участников с установленными никами:\n\n")
 
+@dp.message(Command('delete'))
+async def delete_handler(message: Message):
+    if not is_owner(message.from_user.id):
+        await message.answer('У вас нет прав на выполнение этой команды')
+        return
+    if message.chat.type == "private":
+        await message.answer("Удалять сообщения можно только в беседах")
+    
+
 @dp.message(Command('nick'))
 async def nick_handler(message: Message):
     parts = message.text.split()
@@ -203,6 +206,10 @@ async def kick_handler(message: Message):
     if len(parts) != 2:
         await message.answer("Формат: /kick причина")
         return
+    target = message.reply_to_message.from_user
+    if target.id == message.from_user.id:
+        await message.answer("Себя кикнуть нельзя!")
+        return
     await message.answer("Пользователь был успешно исключен из беседы")
 
 @dp.message(Command('ban'))
@@ -220,6 +227,10 @@ async def ban_handler(message: Message):
     if len(parts) != 3:
         await message.answer("Формат: /ban время причина")
         return
+    target = message.reply_to_message.from_user
+    if target.id == message.from_user.id:
+        await message.answer("Себя кикнуть нельзя!")
+        return
     await message.answer("Пользователь был успешно забанен\n\nЧтобы снять бан используйте /unban")
 
 @dp.message(Command('warn'))
@@ -236,6 +247,10 @@ async def warn_handler(message: Message):
      parts = message.text.split()
      if len(parts) != 2:
         await message.answer("Формат: /warn причина")
+        return
+     target = message.reply_to_message.from_user
+     if target.id == message.from_user.id:
+        await message.answer("Себя кикнуть нельзя!")
         return
      await message.answer("В разработке")
 
@@ -321,6 +336,10 @@ async def addgreetings_handler(message: Message):
         await message.answer("Устанавливать правила можно только в беседах")
         return
      await message.answer('В разработке')
+
+@dp.message(Command('weather'))
+async def rules_handler(message: Message):
+    await message.answer("В разработке")
      
 
 @dp.message()
