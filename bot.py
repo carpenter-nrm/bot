@@ -146,7 +146,11 @@ async def unmute_handler(message: Message):
         await message.answer("Снимать бан чата можно только в беседах")
         return
     if not message.reply_to_message:
-        await message.answer("Ответь на сообщение того, кому хочешь выдать мут")
+        await message.answer("Ответь на сообщение того, кому хочешь снять мут")
+        return
+    parts = message.text.split()
+    if len(parts) != 2:
+        await message.answer("Формат: /mute время")
         return
     target = message.reply_to_message.from_user
     await bot.restrict_chat_member(
