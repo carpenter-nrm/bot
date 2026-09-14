@@ -34,7 +34,17 @@ def is_owner(user_id):
 
 @dp.message(Command("info"))
 async def info_handler(message: Message):
+    if message.chat.type == "private":
+        await message.answer("Смотреть информацию о пользователях можно только в беседах")
+        return
+    if not message.reply_to_message:
+        await message.answer("Ответь на сообщение того, о ком хочешь узнать информацию")
+        return
     user_id = message.from_user.id
+    name = message.reply_to_message.from_user.full_name
+    username = message.reply_to_message.from_user.username
+    id = message.reply_to_message.from_user.id
+
     level = get_level(user_id)
     if level >= 100:
         role = "Владелец"
@@ -45,12 +55,14 @@ async def info_handler(message: Message):
     else:
         role = "Пользователь"
 
+    userrole = message.reply_to_message.from_user.role
+
     await message.answer(
         "Пользователь:\n\n"
-        f"Имя: {message.reply_to_message.from_user.full_name}\n"
-        f"Username: {message.reply_to_message.from_user.username}\n"
-        f"ID: {user_id}\n"
-        f"Роль: {role}\n\n"
+        f"Имя: {name}\n"
+        f"Username: {username}\n"
+        f"ID: {id}\n"
+        f"Роль: {userrole}\n\n"
         "Наличие предупреждений: в разработке"
     )
 
