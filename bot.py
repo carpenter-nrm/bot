@@ -212,7 +212,8 @@ async def kick_handler(message: Message):
     if target.id == message.from_user.id:
         await message.answer("Себя кикнуть нельзя!")
         return
-    await message.chat.ban(message.chat.id, target.id)
+    await message.bot.ban_chat_member(chat_id=message.chat.id, user_id=target.id)
+    await message.bot.unban_chat_member(chat_id=message.chat.id, user_id=target.id)
     await message.answer(f"Пользователь {target.full_name} исключен из беседы")
 
 
