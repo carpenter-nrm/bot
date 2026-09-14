@@ -183,7 +183,10 @@ async def delete_handler(message: Message):
         return
     if message.chat.type == "private":
         await message.answer("Удалять сообщения можно только в беседах")
-    
+    if not message.reply_to_message:
+        await message.answer("Ответь на сообщение то сообщение, которое хочешь удалить")
+        return
+    await message.bot.delete_message()
 
 @dp.message(Command('nick'))
 async def nick_handler(message: Message):
