@@ -46,9 +46,12 @@ async def info_handler(message: Message):
         role = "Пользователь"
 
     await message.answer(
-        f"{message.from_user.full_name}\n"
+        "Пользователь:\n\n"
+        f"Имя: {message.reply_to_message.from_user.full_name}\n"
+        f"Username: {message.reply_to_message.from_user.username}\n"
         f"ID: {user_id}\n"
-        f"Роль: {role}"
+        f"Роль: {role}\n\n"
+        "Наличие предупреждений: в разработке"
     )
 
 @dp.message(Command("setrole"))
@@ -187,8 +190,8 @@ async def kick_handler(message: Message):
         await message.answer("Ответь на сообщение того, кого хочешь кикнуть")
         return
     parts = message.text.split()
-    if len(parts) != 3:
-        await message.answer("Формат: /kick username причина")
+    if len(parts) != 2:
+        await message.answer("Формат: /kick причина")
         return
     await message.answer("Пользователь был успешно исключен из беседы")
 
@@ -204,8 +207,8 @@ async def ban_handler(message: Message):
         await message.answer("Ответь на сообщение того, кого хочешь забанить")
         return
     parts = message.text.split()
-    if len(parts) != 4:
-        await message.answer("Формат: /ban username время причина")
+    if len(parts) != 3:
+        await message.answer("Формат: /ban время причина")
         return
     await message.answer("Пользователь был успешно забанен\n\nЧтобы снять бан используйте /unban")
 
@@ -221,10 +224,10 @@ async def warn_handler(message: Message):
         await message.answer("Ответь на сообщение того, кому хочешь выдать варн")
         return
      parts = message.text.split()
-     if len(parts) != 3:
-        await message.answer("Формат: /warn username причина")
+     if len(parts) != 2:
+        await message.answer("Формат: /warn причина")
         return
-     await message.answer("Пользователь получил предупреждение\n\nЧтобы снять предупреждение используйте /unwarn")
+     await message.answer("В разработке")
 
 @dp.message(Command('warnlist'))
 async def warnlist_handler(message: Message):
@@ -234,7 +237,7 @@ async def warnlist_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Просматривать список участников с предупреждениями можно выдавать только в беседах")
         return
-     await message.answer('Список пользователей с варнами:\n\n')
+     await message.answer('В разработке')
 
 @dp.message(Command('unban'))
 async def unban_handler(message: Message):
@@ -244,7 +247,10 @@ async def unban_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Снимать баны можно только в беседах")
         return
-     await message.answer('Вы успешно разбанили пользователя')
+     if not message.reply_to_message:
+        await message.answer("Ответь на сообщение того, кому хочешь снять бан")
+        return
+     await message.answer('В разработке')
 
 @dp.message(Command('unwarn'))
 async def unwarn_handler(message: Message):
@@ -254,7 +260,10 @@ async def unwarn_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Снимать варны можно только в беседах")
         return
-     await message.answer('Вы успешно сняли предупреждение пользователю')
+     if not message.reply_to_message:
+        await message.answer("Ответь на сообщение того, кому хочешь снять варн")
+        return
+     await message.answer('В разработке')
 
 
 
@@ -266,7 +275,7 @@ async def banlist_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Просматривать список участников в бане можно только в беседах")
         return
-     await message.answer('Список пользователей находящихся в бане:\b\n')
+     await message.answer('В разработке')
 
 @dp.message(Command('mutelist'))
 async def mutelist_handler(message: Message):
@@ -276,22 +285,22 @@ async def mutelist_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Просматривать список участников находящихся в муте можно только в беседах")
         return
-     await message.answer('Список пользователей находящихся в муте:\n\n')
+     await message.answer('В разработке')
 
 @dp.message(Command('greetings'))
 async def greetings_handler(message: Message):
-    await message.answer("Приветствие не установлено.\n\nЧтобы установить приветствие используйте /addgreetings")
+    await message.answer("В разработке")
 
 @dp.message(Command('addgreetings'))
 async def addgreetings_handler(message: Message):
      if not is_admin(message.from_user.id):
         await message.answer("У вас нет прав не выполнение этой команды.")
         return
-     await message.answer('Приветствие успешно установлено')
+     await message.answer('В разработке')
 
 @dp.message(Command('rules'))
 async def rules_handler(message: Message):
-    await message.answer("Правила не установлены.\n\nЧтобы установить правила используйте /addrules")
+    await message.answer("В разработке")
 
 @dp.message(Command('addrules'))
 async def addgreetings_handler(message: Message):
@@ -301,7 +310,7 @@ async def addgreetings_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Устанавливать правила можно только в беседах")
         return
-     await message.answer('Правила успешно установлены')
+     await message.answer('В разработке')
      
 
 @dp.message()
