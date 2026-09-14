@@ -55,8 +55,6 @@ async def info_handler(message: Message):
     else:
         role = "Пользователь"
 
-    userrole = message.reply_to_message.from_user.role
-
     await message.reply(
         "Пользователь:\n\n"
         f"Имя: {name}\n"
