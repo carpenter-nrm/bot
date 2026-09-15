@@ -18,27 +18,43 @@ ROLES = {}
 OWNER_ID = 732840192
 LEVELS = {
     "user": 0,
-    "moder": 25,
     "admin": 50,
     "owner": 100,
 
 }
 
 
-def get_level(user_Id):
-    if user_Id == OWNER_ID:
+async def get_level(user_id, chat_id=None):
+    if user_id == OWNER_ID:
         return 100
-    return ROLES.get(user_Id, 0)
+    if chat_id:
+        try:
+            member = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+            if member.status == "creator":
+                return 100
+        except Exception:
+            pass
+    return ROLES.get(user_id, 0)
 
-def is_admin(user_id):
-    return get_level(user_id) >= 50
+async def is_admin(user_id, chat_id=None):
+    level = await get_level(user_id, chat_id)
+    return level >= 50
 
-def is_owner(user_id):
-    return user_id == OWNER_ID
+async def is_owner(user_id, chat_id=None):
+    if user_id == OWNER_ID:
+        return True
+    if chat_id:
+        try:
+            member = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+            if member.status == "creator":
+                return True
+        except Exception:
+            pass
+    return False
 
-def can_punish(admin_id, target_id):
-    admin_level = get_level(admin_id)
-    target_level = get_level(target_id)
+async def can_punish(admin_id, target_id, chat_id=None):
+    admin_level = await get_level(admin_id, chat_id)
+    target_level = await get_level(target_id, chat_id)
     return admin_level > target_level
 
 async def check_bot_admin(message, need_right=None):
@@ -80,13 +96,11 @@ async def info_handler(message: Message):
     username = message.reply_to_message.from_user.username
     id = message.reply_to_message.from_user.id
 
-    level = get_level(id)
+    level = await get_level(id, message.chat.id)
     if level >= 100:
         role = "Владелец"
     elif level >= 50:
         role = "Администратор"
-    elif level >= 25:
-        role = "Модератор"
     else:
         role = "Пользователь"
 
@@ -101,7 +115,7 @@ async def info_handler(message: Message):
 
 @dp.message(Command("setrole"))
 async def setrole_handler(message: Message):
-    if not is_owner(message.from_user.id):
+    if not await is_owner(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав не выполнение этой команды.")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
@@ -117,7 +131,7 @@ async def setrole_handler(message: Message):
         await message.answer("Ошибка: ID должен быть числом\n\nЧтобы узнать ID используйте /info")
         return
     if role not in LEVELS:
-        await message.answer(f"Роли: {', ' .join(LEVELS.keys())}")
+        await message.answer(f"Ошибка: Такой роли не существует\n\nСписок всех существующих ролей:\n {', ' .join(LEVELS.keys())}")
         return
     ROLES[target_id] = LEVELS[role]
     if message.chat.type != "private" and role == "admin":
@@ -143,7 +157,7 @@ first = {"/info", '/time', "/weather"}
 @dp.message(CommandStart())
 async def start_handler(message: Message):
 
-    await message.answer("Добро пожаловать. Я — Chat Guard, административный ассистент. \n\nЯ предназначен для автоматизации управления участниками и поддержания порядка в чате.\n\nФункционал:\n• Система ников\n• Система предупреждений\n• Исключение из чата\n• Блокировка чата\n• Список участников чата с наказаниями\n\nДля подробного ознакомления с командами введите /help.")
+    await message.answer("Добро пожаловать. Я — Chat Guard, административный ассистент. \n\nЯ предназначен для автоматизации управления участниками и поддержания порядка в чате.\n\nФункционал:\n• Система ников\n• Система предупреждений\n• Исключение из чата\n• Блокировка чата\n• Список участников чата с наказаниями\n\nДля подробного ознакомления с командами введите /help.\n\n-------------------------------\nГораздо больше о боте вы можете узнать в нашем ТГК - ")
 
 @dp.message(Command("help"))
 async def help_handler(message: Message):
@@ -172,7 +186,7 @@ async def unmute_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
              return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
    
@@ -184,11 +198,10 @@ async def unmute_handler(message: Message):
         target_input = parts[1]
     else:
         await message.answer(
-            "Ошибка: Введите:\n\n"
+            "Ошибка:\n\n Введите:\n"
             "1) /unmute в ответ на сообщение того, кому хотите снять мут\n"
             "2) /unmute @username\n"
-            "3) /unmute ID"
-        )
+            "3) /unmute ID\n\n")
         return
     target_id = None
     target_name = target_input
@@ -209,7 +222,7 @@ async def unmute_handler(message: Message):
         try:
             target_id = int(target_input)
         except ValueError:
-            await message.answer("Ошибка: Вы не указали кому снять мут.\n\nИспользуйте @username или ID")
+            await message.answer("Ошибка: Вы не указали кому хотите снять мут.\n\nИспользуйте @username или ID")
             return
         try:
             member = await bot.get_chat_member(
@@ -249,14 +262,14 @@ async def delete_handler(message: Message):
     if not await check_bot_admin(message, "can_pin_messages"):
         return
     target = message.reply_to_message.from_user
-    if not is_owner(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer('Ошибка: У вас нет прав на выполнение этого действия')
         return
     if not message.reply_to_message:
         await message.answer("Ошибка: Ответьте на то сообщение, которое хотите удалить")
         return
-    if not can_punish(message.from_user.id, target.id):
-        await message.answer("Ошибка: Вы не можете удалить сообщение человека выше вас по должности")
+    if not await can_punish(message.from_user.id, target.id, message.chat.id):
+        await message.answer("Ошибка: Вы не можете удалить сообщение человека, который имеет должность равнную вашей или выше")
         return
     await message.bot.delete_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
 
@@ -279,7 +292,7 @@ async def kick_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
             return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     
@@ -296,7 +309,7 @@ async def kick_handler(message: Message):
             reason = parts[2]
     else:
         await message.answer(
-            "Ошибка: Введите:\n\n"
+            "Ошибка:\n\n Введите:\n"
             "1) /kick [причина] в ответ на сообщение того, кого хотите кикнуть\n"
             "2) /kick @username [причина]\n"
             "3) /kick ID [причина]"
@@ -334,8 +347,8 @@ async def kick_handler(message: Message):
     if target_id == message.from_user.id:
         await message.answer("Ошибка: Себя кикнуть нельзя!")
         return
-    if not can_punish(message.from_user.id, target_id):
-        await message.answer("Ошибка: Вы не можеше кикнуть того, кто выше вас по должности")
+    if not await can_punish(message.from_user.id, target_id, message.chat.id):
+        await message.answer("Ошибка: Вы не можете кикнуть человека, который имеет должность равнную вашей или выше")
         return
     try:
         await bot.ban_chat_member(
@@ -359,7 +372,7 @@ async def mute_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     
@@ -386,7 +399,7 @@ async def mute_handler(message: Message):
             reason = parts[3]
     else:
         await message.answer(
-            "Ошибка: Введите:\n\n"
+            "Ошибка:\n\n Введите:\n"
             "1) /mute [минуты] [причина] в ответ на сообщение того, кому хочешь выдать мут\n"
             "2) /mute @username [минуты] [причина]\n"
             "3) /mute ID [минуты] [причина]"
@@ -425,8 +438,8 @@ async def mute_handler(message: Message):
     if target_id == message.from_user.id:
         await message.answer("Ошибка: Выдать мут самому себе нельзя!")
         return
-    if not can_punish(message.from_user.id, target_id):
-        await message.answer("Ошибка: Вы не можете выдать мут человеку выше вас по должности")
+    if not await can_punish(message.from_user.id, target_id, message.chat.id):
+        await message.answer("Ошибка: Вы не можете выдать мут человеку, который имеет должность равнную вашей или выше")
         return
     until = datetime.datetime.now() + timedelta(minutes=minutes)
     try:
@@ -442,7 +455,7 @@ async def ban_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
             return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     parts = message.text.split(maxsplit=3)
@@ -469,11 +482,11 @@ async def ban_handler(message: Message):
             reason = parts[3]
     else:
         await message.answer(
-            "Ошибка: Введите:\n\n"
+            "Ошибка:\n\n Введите:\n"
             "1) /ban [дни] причина в ответ на сообщение того, кого хотите забанить\n"
             "2) /ban @username [дни] причина\n"
             "3) /ban ID [дни] причина\n\n"
-            "Пример: /ban @narimashkq 3d спам"
+    
         )
         return
     target_id = None
@@ -507,8 +520,8 @@ async def ban_handler(message: Message):
     if target_id == message.from_user.id:
         await message.answer("Ошибка: Себя забанить нельзя!")
         return
-    if not can_punish(message.from_user.id, target_id):
-        await message.answer("Ошибка: Вы не можете забанить того, кто выше вас по должности")
+    if not await can_punish(message.from_user.id, target_id, message.chat.id):
+        await message.answer("Ошибка: Вы не можете выдать бан человеку, который имеет должность равнную вашей или выше")
         return
     bot_member = await bot.get_chat_member(message.chat.id, bot.id)
     until = None
@@ -534,7 +547,7 @@ async def warn_handler(message: Message):
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
-     if not is_admin(message.from_user.id):
+     if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
      
@@ -551,8 +564,8 @@ async def warn_handler(message: Message):
         await message.answer("Ошибка: Выдать варн нельзя!")
         return
      target_id = message.from_user.id
-     if not can_punish(message.from_user.id, target.id):
-        await message.answer("Ошибка: Вы не можеште выдать мут человеку выше вас по должности")
+     if not await can_punish(message.from_user.id, target.id, message.chat.id):
+        await message.answer("Ошибка: Вы не можете выдать варн человеку, который имеет должность равнную вашей или выше")
         return
      await message.answer("В разработке")
 
@@ -563,7 +576,7 @@ async def warnlist_handler(message: Message):
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
-     if not is_admin(message.from_user.id):
+     if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return 
      
@@ -576,7 +589,7 @@ async def unban_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
             return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     
@@ -588,7 +601,7 @@ async def unban_handler(message: Message):
         target_input = parts[1]
     else:
         await message.answer(
-            "Ошибка: Введите:\n\n"
+            "Ошибка:\n\n Введите:\n"
             "1) /unban в ответ на сообщение того, кого хотите разбанить\n"
             "2) /unban @username\n"
             "3) /unban ID"
@@ -640,7 +653,7 @@ async def unwarn_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     if not message.reply_to_message:
@@ -657,7 +670,7 @@ async def banlist_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     await message.answer('В разработке')
@@ -669,7 +682,7 @@ async def mutelist_handler(message: Message):
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
-     if not is_admin(message.from_user.id):
+     if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
      
@@ -692,7 +705,7 @@ async def addgreetings_handler(message: Message):
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
-     if not is_admin(message.from_user.id):
+     if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
      await message.answer('В разработке')
@@ -713,7 +726,7 @@ async def addruless_handler(message: Message):
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
-     if not is_admin(message.from_user.id):
+     if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
      await message.answer('В разработке')
@@ -725,7 +738,7 @@ async def pin_handler(message: Message):
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id, message.chat.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
     if not message.reply_to_message:
