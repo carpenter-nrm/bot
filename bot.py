@@ -35,6 +35,11 @@ def is_admin(user_id):
 def is_owner(user_id):
     return user_id == OWNER_ID
 
+def can_punish(admin_id, target_id):
+    admin_level = get_level(admin_id)
+    target_level = get_level(admin_id)
+    return admin_level > target_level
+
 @dp.message(Command("info"))
 async def info_handler(message: Message):
     if message.chat.type == "private":
@@ -199,6 +204,9 @@ async def mute_handler(message: Message):
             target_name = f"ID {target_id}"
     if target_id == message.from_user.id:
         await message.answer("Себя мутить нельзя!")
+        return
+    if not can_punish(message.from_user.id, target_id):
+        await message.answer("Ты не можешь выдать мут человеку выше тебя по должности")
         return
     until = datetime.datetime.now() + timedelta(minutes=minutes)
     try:
