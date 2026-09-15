@@ -41,6 +41,32 @@ def can_punish(admin_id, target_id):
     target_level = get_level(target_id)
     return admin_level > target_level
 
+async def check_bot_admin(message, need_right=None):
+    try:
+        bot_member = await bot.get_chat_member(chat_id=message.chat.id, user_id=bot.id)
+    except Exception as e:
+        await message.answer(f"Ошибка проверки прав бота: {e}")
+        return False
+    if bot_member.status not in ("administrator", "creator"):
+        await message.answer(
+            "Я не являюсь администратором в этой беседе.\n\n"
+            "Выдайте мне права чтобы я мог выполнять свои функции")
+        return False
+    if need_right:
+        has_right = getattr(bot_member, need_right, False)
+        if not has_right:
+            rights_names = {
+                "can_pin_messages": "Закреплять сообщения",
+                "can_delete_messages": "Удалять сообщения",
+                "can_restrict_members": "Ограничивать участников",
+                "can_invite_users": "Приглашать пользователей",
+                "can_promote_members": "Назначать администраторов",
+            }
+            right_name = rights_names.get(need_right, need_right)
+            await message.answer(f"У меня нет права: «{right_name}»\n\nВыдайте мне права администратора чтобы я мог выполнять свои функции")
+            return False
+    return True
+
 @dp.message(Command("info"))
 async def info_handler(message: Message):
     if message.chat.type == "private":
@@ -77,6 +103,8 @@ async def info_handler(message: Message):
 async def setrole_handler(message: Message):
     if not is_owner(message.from_user.id):
         await message.answer("Ошибка: У вас нет прав не выполнение этой команды.")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     parts = message.text.split()
     if len(parts) != 3:
@@ -141,6 +169,8 @@ async def mute_handler(message: Message):
         return
     if message.chat.type == "private":
         await message.answer("Ошибка: Муты можно выдавать только в беседах")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     parts = message.text.split(maxsplit=3)
     target_input = None
@@ -228,6 +258,8 @@ async def unmute_handler(message: Message):
     if not message.reply_to_message:
         await message.answer("Ошибка: Ответь на сообщение того, кому хочешь снять мут")
         return
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
     target = message.reply_to_message.from_user
     await bot.restrict_chat_member(
         chat_id=message.chat.id, 
@@ -242,6 +274,10 @@ async def unmute_handler(message: Message):
 
 @dp.message(Command('nicklist'))
 async def nicklist_handler(message: Message):
+    if not message.chat.type == "private":
+        await message.answer("Ошибка: Просматривать список установленных ников можно только в беседах")
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
     await message.answer("Список участников с установленными никами:\n\n")
 
 @dp.message(Command('delete'))
@@ -258,6 +294,8 @@ async def delete_handler(message: Message):
     if not can_punish(message.from_user.id, target_id):
         await message.answer("Ошибка: Ты не можешь удалить сообщение человека выше тебя по должности")
         return
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
     await message.bot.delete_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
 
 @dp.message(Command('nick'))
@@ -265,6 +303,8 @@ async def nick_handler(message: Message):
     parts = message.text.split()
     if len(parts) <= 0:
         await message.answer("Ошибка: Формат: /nick NickName")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     await message.answer("Вы успешно установили себе ник:" + message.text)
 
@@ -291,6 +331,8 @@ async def kick_handler(message: Message):
     if target.id == message.from_user.id:
         await message.answer("Ошибка: Себя кикнуть нельзя!")
         return
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
     await message.bot.ban_chat_member(chat_id=message.chat.id, user_id=target.id)
     await message.bot.unban_chat_member(chat_id=message.chat.id, user_id=target.id)
     await message.answer(f"Пользователь {target.full_name} исключен из беседы")
@@ -316,6 +358,8 @@ async def ban_handler(message: Message):
     target_id = message.from_user.id
     if not can_punish(message.from_user.id, target_id):
         await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     parts = message.text.split()
     until = None
@@ -367,6 +411,8 @@ async def warn_handler(message: Message):
      if not can_punish(message.from_user.id, target_id):
         await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
         return
+     if not await check_bot_admin(message, "can_pin_messages"):
+        return
      await message.answer("В разработке")
 
 @dp.message(Command('warnlist'))
@@ -377,7 +423,8 @@ async def warnlist_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Ошибка: Просматривать список участников с предупреждениями можно выдавать только в беседах")
         return
-
+     if not await check_bot_admin(message, "can_pin_messages"):
+        return
      await message.answer('В разработке')
 
 @dp.message(Command('unban'))
@@ -391,6 +438,8 @@ async def unban_handler(message: Message):
      if not message.reply_to_message:
         await message.answer("Ошибка: Ответь на сообщение того, кому хочешь снять бан")
         return
+     if not await check_bot_admin(message, "can_pin_messages"):
+            return
      await message.answer('В разработке')
 
 @dp.message(Command('unwarn'))
@@ -404,6 +453,8 @@ async def unwarn_handler(message: Message):
      if not message.reply_to_message:
         await message.answer("Ошибка: Ответь на сообщение того, кому хочешь снять варн")
         return
+     if not await check_bot_admin(message, "can_pin_messages"):
+        return
      await message.answer('В разработке')
 
 
@@ -416,6 +467,8 @@ async def banlist_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Ошибка: Просматривать список участников в бане можно только в беседах")
         return
+     if not await check_bot_admin(message, "can_pin_messages"):
+        return
      await message.answer('В разработке')
 
 @dp.message(Command('mutelist'))
@@ -426,12 +479,16 @@ async def mutelist_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Ошибка: Просматривать список участников находящихся в муте можно только в беседах")
         return
+     if not await check_bot_admin(message, "can_pin_messages"):
+        return
      await message.answer('В разработке')
 
 @dp.message(Command('greetings'))
 async def greetings_handler(message: Message):
     if message.chat.type == "private":
         await message.answer("Ошибка: Просматривать приветствие можно только в беседах")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     await message.answer("В разработке")
 
@@ -443,12 +500,16 @@ async def addgreetings_handler(message: Message):
      if message.chat.type == "private":
         await message.answer("Ошибка: Устанавливать приветствия можно только в беседах")
         return
+     if not await check_bot_admin(message, "can_pin_messages"):
+        return
      await message.answer('В разработке')
 
 @dp.message(Command('rules'))
 async def rules_handler(message: Message):
     if message.chat.type == "private":
         await message.answer("Ошибка: Просматривать правила можно только в беседах")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     await message.answer("В разработке")
 
@@ -459,6 +520,8 @@ async def addruless_handler(message: Message):
         return
      if message.chat.type == "private":
         await message.answer("Ошибка: Устанавливать правила можно только в беседах")
+        return
+     if not await check_bot_admin(message, "can_pin_messages"):
         return
      await message.answer('В разработке')
 
@@ -472,6 +535,8 @@ async def pin_handler(message: Message):
         return
     if not message.reply_to_message:
         await message.answer("Ошибка: Ответьте на сообщение которое хотите закрепить")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
         return
     try:
         await bot.pin_chat_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
