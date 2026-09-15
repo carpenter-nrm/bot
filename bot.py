@@ -147,7 +147,7 @@ async def start_handler(message: Message):
 
 @dp.message(Command("help"))
 async def help_handler(message: Message):
-    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию о себе\n"'/nicklist - посмотреть ники участников\n''/nick - установить ник участнику беседы\n''/mute - выдать мут участнику беседы\n''/warn - выдать предупреждение участнику беседы\n''/kick - кикнуть участника беседы\n''/ban - забанить участника беседы\n''/unmute - снять бан чата участнику беседы\n''/unwarn - снять варн участнику беседы\n''/unban - снять бан участнику беседы\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/greetings - приветствие в беседе\n''/addgreetings - установить приветствие в беседе\n''/rules - правила беседы\n''/addrules - установить правила\n''/delete - удалить сообщение участника беседы\n''/pin - закрепить сообщение\n'"/top - топ участников по сообщениям\n"'/time - узнать сколько сейчас времени\n''/weather - узнать какая сейчас погода\n''/help - список команд')
+    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию об участнике чата\n"'/nicklist - посмотреть ники участников чата\n''/nick - установить ник участнику чата\n''/mute - выдать мут участнику чата\n''/warn - выдать предупреждение участнику чата\n''/kick - кикнуть участника чата\n''/ban - забанить участника чата\n''/unmute - снять бан чата участнику чата\n''/unwarn - снять варн участнику чата\n''/unban - снять бан участнику чата\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/greetings -посмотреть приветствие чата\n''/addgreetings - установить приветствие в чате\n''/rules - посмотреть правила чата\n''/addrules - установить правила чата\n''/delete - удалить сообщение участника чата\n''/pin - закрепить сообщение\n'"/top - топ участников по сообщениям в чате\n"'/time - узнать сколько сейчас времени\n''/weather - узнать какая сейчас погода\n''/help - список команд')
 
 @dp.message(Command("time"))
 async def time_handler(message: Message):
@@ -163,10 +163,199 @@ async def time_handler(message: Message):
     text += f"Время: {now.strftime('%H:%M')}"
     await message.answer(text)
 
+
+
+@dp.message(Command("unmute"))
+async def unmute_handler(message: Message):
+    if message.chat.type == "private":
+        await message.answer("Ошибка: Снимать мут можно только в чатах")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
+             return
+    if not is_admin(message.from_user.id):
+        await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
+        return
+   
+    parts = message.text.split()
+    target_input = None
+    if message.reply_to_message:
+        target_input = str(message.reply_to_message.from_user.id)
+    elif len(parts) >= 2:
+        target_input = parts[1]
+    else:
+        await message.answer(
+            "Ошибка: Введите:\n\n"
+            "1) /unmute в ответ на сообщение того, кому хотите снять мут\n"
+            "2) /unmute @username\n"
+            "3) /unmute ID"
+        )
+        return
+    target_id = None
+    target_name = target_input
+    if target_input.startswith("@"):
+        username = target_input[1:]
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=username
+            )
+            target_id = member.user.id
+            target_name = member.user.full_name
+        except Exception:
+            await message.answer(
+                f"Пользователь @{username} не найден в чате.\nПопробуйте через ID.")
+            return
+    else:
+        try:
+            target_id = int(target_input)
+        except ValueError:
+            await message.answer("Ошибка: Вы не указали кому снять мут.\n\nИспользуйте @username или ID")
+            return
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=target_id
+            )
+            target_name = member.user.full_name
+        except Exception:
+            target_name = f"ID {target_id}"
+    try:
+        await bot.restrict_chat_member(
+            chat_id=message.chat.id,
+            user_id=target_id,
+            permissions=ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
+        )
+        await message.answer(f"Пользователь {target_name} больше не имеет бан чата")
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
+
+@dp.message(Command('nicklist'))
+async def nicklist_handler(message: Message):
+    if message.chat.type == "private":
+        await message.answer("Ошибка: Просматривать список установленных ников можно только в чатах")
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
+    await message.answer("Список участников с установленными никами:\n\n")
+
+@dp.message(Command('delete'))
+async def delete_handler(message: Message):
+    if message.chat.type == "private":
+        await message.answer("Ошибка: Удалять сообщения можно только в чатах")
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
+    target = message.reply_to_message.from_user
+    if not is_owner(message.from_user.id):
+        await message.answer('Ошибка: У вас нет прав на выполнение этого действия')
+        return
+    if not message.reply_to_message:
+        await message.answer("Ошибка: Ответьте на то сообщение, которое хотите удалить")
+        return
+    if not can_punish(message.from_user.id, target.id):
+        await message.answer("Ошибка: Вы не можете удалить сообщение человека выше вас по должности")
+        return
+    await message.bot.delete_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
+
+@dp.message(Command('nick'))
+async def nick_handler(message: Message):
+    if message.chat.type == "private":
+        await message.answer("Ошибка: Устанавливать ники можно только в чатах")
+    if not await check_bot_admin(message, "can_pin_messages"):
+        return
+    parts = message.text.split()
+    if len(parts) <= 0:
+        await message.answer("Ошибка: Формат: /nick NickName")
+        return
+    await message.answer("Вы успешно установили себе ник:" + message.text)
+
+@dp.message(Command("kick"))
+async def kick_handler(message: Message):
+    if message.chat.type == "private":
+        await message.answer("Ошибка: Кикать можно только в чатах")
+        return
+    if not await check_bot_admin(message, "can_pin_messages"):
+            return
+    if not is_admin(message.from_user.id):
+        await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
+        return
+    
+    parts = message.text.split(maxsplit=3)
+    target_input = None
+    reason = "не указана"
+    if message.reply_to_message:
+        target_input = str(message.reply_to_message.from_user.id)
+        if len(parts) >= 2:
+            reason = parts[1]
+    elif len(parts) >= 2:
+        target_input = parts[1]
+        if len(parts) >= 3:
+            reason = parts[2]
+    else:
+        await message.answer(
+            "Ошибка: Введите:\n\n"
+            "1) /kick [причина] в ответ на сообщение того, кого хотите кикнуть\n"
+            "2) /kick @username [причина]\n"
+            "3) /kick ID [причина]"
+        )
+        return
+    target_id = None
+    target_name = target_input
+    if target_input.startswith("@"):
+        username = target_input[1:]
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=username
+            )
+            target_id = member.user.id
+            target_name = member.user.full_name
+        except Exception:
+            await message.answer(
+                f"Пользователь @{username} не найден в чате.\n\nПопробуйте через ID или reply.")
+            return
+    else:
+        try:
+            target_id = int(target_input)
+        except ValueError:
+            await message.answer("Ошибка: Вы не указали кого кикнуть\n\nИспользуйте @username или ID")
+            return
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=target_id
+            )
+            target_name = member.user.full_name
+        except Exception:
+            target_name = f"ID {target_id}"
+    if target_id == message.from_user.id:
+        await message.answer("Ошибка: Себя кикнуть нельзя!")
+        return
+    if not can_punish(message.from_user.id, target_id):
+        await message.answer("Ошибка: Вы не можеше кикнуть того, кто выше вас по должности")
+        return
+    try:
+        await bot.ban_chat_member(
+            chat_id=message.chat.id,
+            user_id=target_id
+        )
+        await bot.unban_chat_member(
+            chat_id=message.chat.id,
+            user_id=target_id,
+            only_if_banned=True
+        )
+        await message.answer(
+            f"Пользователь {target_name} исключен из чата\n\nПричина: {reason}")
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
+
 @dp.message(Command("mute"))
 async def mute_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Муты можно выдавать только в беседах")
+        await message.answer("Ошибка: Муты можно выдавать только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -176,7 +365,6 @@ async def mute_handler(message: Message):
     
     parts = message.text.split(maxsplit=3)
     target_input = None
-    minutes = 10
     reason = "не указана"
     if message.reply_to_message:
         target_input = str(message.reply_to_message.from_user.id)
@@ -217,15 +405,13 @@ async def mute_handler(message: Message):
             target_name = member.user.full_name
         except Exception:
             await message.answer(
-                f"Ошмбка: Не нашёл @{username} в чате.\n\n"
-                f"Попробуй через ID или reply на его сообщение."
-            )
+                f"Ошмбка: Пользователь @{username} не найден в чате.\n\nПопробуйте через ID или reply на его сообщение.")
             return
     else:
         try:
             target_id = int(target_input)
         except ValueError:
-            await message.asnwer("Ошибка: Ты не указал кому выдать мут\n\nИспользуй @username или ID")
+            await message.asnwer("Ошибка: Вы не указали кому выдать мут\n\nИспользуйте @username или ID")
             return
 
         try:
@@ -240,7 +426,7 @@ async def mute_handler(message: Message):
         await message.answer("Ошибка: Выдать мут самому себе нельзя!")
         return
     if not can_punish(message.from_user.id, target_id):
-        await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
+        await message.answer("Ошибка: Вы не можете выдать мут человеку выше вас по должности")
         return
     until = datetime.datetime.now() + timedelta(minutes=minutes)
     try:
@@ -249,156 +435,102 @@ async def mute_handler(message: Message):
     except Exception as e:
         await message.answer(f"Ошибка: {e}")
 
-@dp.message(F.text.startswith("/unmute"))
-async def unmute_handler(message: Message):
-    if message.chat.type == "private":
-        await message.answer("Ошибка: Снимать бан чата можно только в беседах")
-        return
-    if not await check_bot_admin(message, "can_pin_messages"):
-        return
-    if not is_admin(message.from_user.id):
-        await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
-        return
-    
-    if not message.reply_to_message:
-        await message.answer("Ошибка: Ответь на сообщение того, кому хочешь снять мут")
-        return
-    
-    target = message.reply_to_message.from_user
-    await bot.restrict_chat_member(
-        chat_id=message.chat.id, 
-        user_id=target.id, 
-        permissions=ChatPermissions(
-            can_send_messages=True, 
-            can_send_media_messages=True, 
-            can_send_other_messages=True, 
-            can_add_web_page_previews=True
-        ))
-    await message.answer(f"{target.full_name} получил разбан чата")
-
-@dp.message(Command('nicklist'))
-async def nicklist_handler(message: Message):
-    if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать список установленных ников можно только в беседах")
-    if not await check_bot_admin(message, "can_pin_messages"):
-        return
-    await message.answer("Список участников с установленными никами:\n\n")
-
-@dp.message(Command('delete'))
-async def delete_handler(message: Message):
-    if message.chat.type == "private":
-        await message.answer("Ошибка: Удалять сообщения можно только в беседах")
-    if not await check_bot_admin(message, "can_pin_messages"):
-        return
-    target = message.reply_to_message.from_user
-    if not is_owner(message.from_user.id):
-        await message.answer('Ошибка: У вас нет прав на выполнение этого действия')
-        return
-    if not message.reply_to_message:
-        await message.answer("Ошибка: Ответь на сообщение то сообщение, которое хочешь удалить")
-        return
-    if not can_punish(message.from_user.id, target.id):
-        await message.answer("Ошибка: Ты не можешь удалить сообщение человека выше тебя по должности")
-        return
-    await message.bot.delete_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
-
-@dp.message(Command('nick'))
-async def nick_handler(message: Message):
-    if message.chat.type == "private":
-        await message.answer("Ошибка: Устанавливать ники можно только в беседах")
-    if not await check_bot_admin(message, "can_pin_messages"):
-        return
-    parts = message.text.split()
-    if len(parts) <= 0:
-        await message.answer("Ошибка: Формат: /nick NickName")
-        return
-    await message.answer("Вы успешно установили себе ник:" + message.text)
-
-@dp.message(Command('kick'))
-async def kick_handler(message: Message):
-    if message.chat.type == "private":
-        await message.answer("Ошибка: Кикать из чата можно только в беседах")
-        return
-    if not await check_bot_admin(message, "can_pin_messages"):
-        return
-    if not is_admin(message.from_user.id):
-        await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
-        return
-    if not message.reply_to_message:
-        await message.answer("Ошибка: Ответь на сообщение того, кого хочешь кикнуть")
-        return
-    target_id = message.from_user.id
-    if not can_punish(message.from_user.id, target.id):
-        await message.answer("Ошибка: Ты не можешь исключить человека выше тебя по должности")
-        return
-    parts = message.text.split()
-    if len(parts) > 2:
-        await message.answer("Ошибка: Формат: /kick причина")
-        return
-    target = message.reply_to_message.from_user
-    if target.id == message.from_user.id:
-        await message.answer("Ошибка: Себя кикнуть нельзя!")
-        return
-    await message.bot.ban_chat_member(chat_id=message.chat.id, user_id=target.id)
-    await message.bot.unban_chat_member(chat_id=message.chat.id, user_id=target.id)
-    await message.answer(f"Пользователь {target.full_name} исключен из беседы")
-
-
-
-@dp.message(Command('ban'))
+@dp.message(Command("ban"))
 async def ban_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Банить участника можно только в беседах")
+        await message.answer("Ошибка: Банить можно только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
-        return
+            return
     if not is_admin(message.from_user.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
-    
-    if not message.reply_to_message:
-        await message.answer("Ошибка: Ответь на сообщение того, кого хочешь забанить")
+    parts = message.text.split(maxsplit=3)
+    target_input = None
+    days = None
+    reason = "не указана"
+    if message.reply_to_message:
+        target_input = str(message.reply_to_message.from_user.id)
+        if len(parts) >= 2:
+            try:
+                days = int(parts[1].lower().replace("d", ""))
+            except ValueError:
+                reason = parts[1]
+        if len(parts) >= 3:
+            reason = parts[2]
+    elif len(parts) >= 2:
+        target_input = parts[1]
+        if len(parts) >= 3:
+            try:
+                days = int(parts[2].lower().replace("d", ""))
+            except ValueError:
+                reason = parts[2]
+        if len(parts) >= 4:
+            reason = parts[3]
+    else:
+        await message.answer(
+            "Ошибка: Введите:\n\n"
+            "1) /ban [дни] причина в ответ на сообщение того, кого хотите забанить\n"
+            "2) /ban @username [дни] причина\n"
+            "3) /ban ID [дни] причина\n\n"
+            "Пример: /ban @narimashkq 3d спам"
+        )
         return
-    parts = message.text.split()
-    target = message.reply_to_message.from_user
-    if target.id == message.from_user.id:
+    target_id = None
+    target_name = target_input
+    if target_input.startswith("@"):
+        username = target_input[1:]
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=username
+            )
+            target_id = member.user.id
+            target_name = member.user.full_name
+        except Exception:
+            await message.answer(f"Ошибка: Пользователь @{username} не найден в чате\n\nПопробуйте через ID")
+            return
+    else:
+        try:
+            target_id = int(target_input)
+        except ValueError:
+            await message.answer("Ошибка: Вы не указали кого забанить\n\nИспользуйте @username или ID")
+            return
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=target_id
+            )
+            target_name = member.user.full_name
+        except Exception:
+            target_name = f"ID {target_id}"
+    if target_id == message.from_user.id:
         await message.answer("Ошибка: Себя забанить нельзя!")
         return
-    target_id = message.from_user.id
-    if not can_punish(message.from_user.id, target.id):
-        await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
+    if not can_punish(message.from_user.id, target_id):
+        await message.answer("Ошибка: Вы не можете забанить того, кто выше вас по должности")
         return
-    parts = message.text.split()
+    bot_member = await bot.get_chat_member(message.chat.id, bot.id)
     until = None
-    days_text = "Навсегда"
-    if len(parts) >= 2:
-        arg = parts[1].lower()
-        try:
-            if arg.endswith("d"):
-                days = int(arg[:-1])
-            else:
-                days = int(arg)
-            if days < 1:
-                days = 1
-            until = datetime.datetime.now() + timedelta(days=days)
-            days_text = f"на {days} дн."
-        except ValueError:
-                await message.answer("Ошибка: Введите /ban или /ban 3d")
-                return
-        try:
-            await bot.ban_chat_member(
-                chat_id=message.chat.id,
-                user_id=target.id,
-                until_date=until
-                    )
-            await message.answer(f"Пользователь {target.full_name} забанен {days_text}")
-        except Exception as e:
-            await message.answer(f"Ошибка: {e}")
+    days_text = "навсегда"
+    if days:
+        until = datetime.datetime.now() + timedelta(days=days)
+        days_text = f"на {days} дн."
+    try:
+        await bot.ban_chat_member(
+            chat_id=message.chat.id,
+            user_id=target_id,
+            until_date=until
+        )
+        await message.answer(
+            f"Пользователь {target_name} забанен {days_text}\nПричина: {reason}")
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
 
 @dp.message(Command('warn'))
 async def warn_handler(message: Message):
      if message.chat.type == "private":
-        await message.answer("Ошибка: Варны можно выдавать только в беседах")
+        await message.answer("Ошибка: Варны можно выдавать только в чатах")
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -408,7 +540,7 @@ async def warn_handler(message: Message):
      
      
      if not message.reply_to_message:
-        await message.answer("Ошибка: Ответь на сообщение того, кому хочешь выдать варн")
+        await message.answer("Ошибка: Ответьте на сообщение того, кому хотите выдать варн")
         return
      parts = message.text.split()
      if len(parts) > 2:
@@ -420,14 +552,14 @@ async def warn_handler(message: Message):
         return
      target_id = message.from_user.id
      if not can_punish(message.from_user.id, target.id):
-        await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
+        await message.answer("Ошибка: Вы не можеште выдать мут человеку выше вас по должности")
         return
      await message.answer("В разработке")
 
 @dp.message(Command('warnlist'))
 async def warnlist_handler(message: Message):
      if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать список участников с предупреждениями можно выдавать только в беседах")
+        await message.answer("Ошибка: Просматривать список участников с предупреждениями можно выдавать только в чатах")
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -437,25 +569,74 @@ async def warnlist_handler(message: Message):
      
      await message.answer('В разработке')
 
-@dp.message(Command('unban'))
+@dp.message(Command("unban"))
 async def unban_handler(message: Message):
-     if message.chat.type == "private":
-        await message.answer("Ошибка: Снимать баны можно только в беседах")
+    if message.chat.type == "private":
+        await message.answer("Ошибка: Разбанивать можно только в чатах")
         return
-     if not await check_bot_admin(message, "can_pin_messages"):
+    if not await check_bot_admin(message, "can_pin_messages"):
             return
-     if not is_admin(message.from_user.id):
+    if not is_admin(message.from_user.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
-     if not message.reply_to_message:
-        await message.answer("Ошибка: Ответь на сообщение того, кому хочешь снять бан")
+    
+    parts = message.text.split()
+    target_input = None
+    if message.reply_to_message:
+        target_input = str(message.reply_to_message.from_user.id)
+    elif len(parts) >= 2:
+        target_input = parts[1]
+    else:
+        await message.answer(
+            "Ошибка: Введите:\n\n"
+            "1) /unban в ответ на сообщение того, кого хотите разбанить\n"
+            "2) /unban @username\n"
+            "3) /unban ID"
+        )
         return
-     await message.answer('В разработке')
+    target_id = None
+    target_name = target_input
+    if target_input.startswith("@"):
+        username = target_input[1:]
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=username
+            )
+            target_id = member.user.id
+            target_name = member.user.full_name
+        except Exception:
+            await message.answer(
+                f"Ошибка: Пользователь @{username} не найден в чате.\n\nПопробуйте через ID.")
+            return
+    else:
+        try:
+            target_id = int(target_input)
+        except ValueError:
+            await message.answer("Ошибка: Вы не указали кого разбанить\n\nИспользуйте @username или ID")
+            return
+        try:
+            member = await bot.get_chat_member(
+                chat_id=message.chat.id,
+                user_id=target_id
+            )
+            target_name = member.user.full_name
+        except Exception:
+            target_name = f"ID {target_id}"
+    try:
+        await bot.unban_chat_member(
+            chat_id=message.chat.id,
+            user_id=target_id,
+            only_if_banned=True
+        )
+        await message.answer(f"Пользователь {target_name} разбанен")
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
 
 @dp.message(Command('unwarn'))
 async def unwarn_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Снимать варны можно только в беседах")
+        await message.answer("Ошибка: Снимать варны можно только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -472,7 +653,7 @@ async def unwarn_handler(message: Message):
 @dp.message(Command('banlist'))
 async def banlist_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать список участников в бане можно только в беседах")
+        await message.answer("Ошибка: Просматривать список участников в бане можно только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -484,7 +665,7 @@ async def banlist_handler(message: Message):
 @dp.message(Command('mutelist'))
 async def mutelist_handler(message: Message):
      if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать список участников находящихся в муте можно только в беседах")
+        await message.answer("Ошибка: Просматривать список участников находящихся в муте можно только в чатах")
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -498,7 +679,7 @@ async def mutelist_handler(message: Message):
 @dp.message(Command('greetings'))
 async def greetings_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать приветствие можно только в беседах")
+        await message.answer("Ошибка: Просматривать приветствие можно только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -507,7 +688,7 @@ async def greetings_handler(message: Message):
 @dp.message(Command('addgreetings'))
 async def addgreetings_handler(message: Message):
      if message.chat.type == "private":
-        await message.answer("Ошибка: Устанавливать приветствия можно только в беседах")
+        await message.answer("Ошибка: Устанавливать приветствия можно только в чатах")
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -519,7 +700,7 @@ async def addgreetings_handler(message: Message):
 @dp.message(Command('rules'))
 async def rules_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать правила можно только в беседах")
+        await message.answer("Ошибка: Просматривать правила можно только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -528,7 +709,7 @@ async def rules_handler(message: Message):
 @dp.message(Command('addrules'))
 async def addruless_handler(message: Message):
      if message.chat.type == "private":
-        await message.answer("Ошибка: Устанавливать правила можно только в беседах")
+        await message.answer("Ошибка: Устанавливать правила можно только в чатах")
         return
      if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -540,7 +721,7 @@ async def addruless_handler(message: Message):
 @dp.message(Command("pin"))
 async def pin_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Закреплять сообщения можно только в беседах")
+        await message.answer("Ошибка: Закреплять сообщения можно только в чатах")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -563,7 +744,7 @@ async def weather_handler(message: Message):
 @dp.message(Command('top'))
 async def top_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer("Ошибка: Просматривать топ по сообщениям можно только в беседах")
+        await message.answer("Ошибка: Просматривать топ по сообщениям можно только в чатах")
         return
     await message.answer("В разработке")
 
