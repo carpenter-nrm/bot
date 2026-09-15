@@ -139,7 +139,7 @@ async def mute_handler(message: Message):
     target = message.reply_to_message.from_user
     
     parts = message.text.split(maxsplit=3)
-    minutes = 120
+    
     if len(parts) < 4:
         await message.answer("Формат: /mute username время причина\n\nПример: /mute @narimashkq 30 оскорбление")
         return
