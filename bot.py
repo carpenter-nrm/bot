@@ -136,28 +136,56 @@ async def mute_handler(message: Message):
     if message.chat.type == "private":
         await message.answer("Бан чата можно выдавать только в беседах")
         return
-    if not message.reply_to_message:
-        await message.answer("Ответь на сообщение того, кому хочешь выдать мут")
-        return
     target = message.reply_to_message.from_user
     
-    parts = message.text.split()
+    parts = message.text.split(maxsplit=3)
     minutes = 120
-    if len(parts) >= 3:
-        try:
-            minutes = int(parts[1])
-        except ValueError:
-            pass
-        until = datetime.datetime.now() + timedelta(minutes=minutes)
-        await bot.restrict_chat_member(
-            chat_id=message.chat.id,
-            user_id=target.id,
-        permissions=ChatPermissions(can_send_messages=False),
-            until_date=until
-        )
-    if len(parts) > 3:
-        await message.answer("Формат: /mute время причина")
+    if len(parts) < 4:
+        await message.answer("Формат: /mute username время причина\n\nПример: /mute @narimashkq 30 оскорбление")
         return
+    target_input = parts[1]
+    try:
+        minutes = int(parts[2])
+    except ValueError:
+        await message.asnwer("Минуты должны быть числом")
+        return
+    reason = parts[3]
+    target_id = None
+    target_name = target_input
+    if target_input.startswith("@"):
+        username = target_input[1:]
+        try:
+            member = await bot.get_chat_member(chat_id=message.chat.id, user_id=username)
+            target_id = member.user.id
+            target_name = member.user.full_name
+        except Exception:
+            await message.answer(f"Пользователь @{username} не находится в чате")
+            return
+        else:
+            try:
+                target_id = int(target_input)
+            except ValueError:
+                await message.asnwer("Никнейм: @username или ID")
+                return
+            try:
+                member = await bot.get_chat_member(chat_id=message.chat.id, user_id=target_id)
+                target_name = member.user.full_name
+            except Exception:
+                pass
+            if target_id == message.from_user.id:
+                await message.answer("Себя мутить нельзя")
+                return
+            until = datetime.datetime.now() + timedelta(minutes=minutes)
+            try:
+                await bot.restrict_chat_member(chat_id=message.chat.id, user_id=target_id, permissions=ChatPermissions(can_send_messages=False), until_date=until)
+                await message.answer(f"Пользователь {target_name} получил мут на {minutes} мин. Причина: {reason}")
+            except Exception as e:
+                await message.answer(f"Ошибка: {e}")
+
+
+
+    
+  
     if target.id == message.from_user.id:
         await message.answer("Выдать себе мут нельзя!")
         return
