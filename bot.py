@@ -86,7 +86,21 @@ async def setrole_handler(message: Message):
         await message.answer(f"Роли: {', ' .join(LEVELS.keys())}")
         return
     ROLES[target_id] = LEVELS[role]
-    await message.answer(f"Пользователь {target_id} теперь {role} (уровень {LEVELS[role]})")
+    if message.chat.type != "private" and role == "admin":
+        try:
+            await bot.promote_chat_member(
+                chat_id=message.chat.id,
+                user_id=target_id,
+                can_delete_messages=True,
+                can_restrict_members=True,
+                can_pin_messages=True,
+                can_invite_users=True
+            )
+            await message.answer(f"Пользователь {target_id} теперь {role}")
+        except Exception as e:
+            await message.asnwer("Ошибка, выдать роль не удалось.")
+    else:
+        await message.answer(f"Пользователь {target_id} теперь {role} ")
 
 
 
