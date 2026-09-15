@@ -128,7 +128,7 @@ async def time_handler(message: Message):
     text += f"Время: {now.strftime('%H:%M')}"
     await message.answer(text)
 
-@dp.message(Command("/mute"))
+@dp.message(Command("mute"))
 async def mute_handler(message: Message):
     if not is_admin(message.from_user.id):
         await message.answer("У вас нет прав")
