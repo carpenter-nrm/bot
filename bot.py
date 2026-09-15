@@ -131,12 +131,11 @@ async def time_handler(message: Message):
 @dp.message(F.text.startswith("/mute"))
 async def mute_handler(message: Message):
     if not is_admin(message.from_user.id):
-        await message.answer("У вас нет прав не выполнение этой команды.")
+        await message.answer("У вас нет прав не выполнение этой команды")
         return
     if message.chat.type == "private":
         await message.answer("Бан чата можно выдавать только в беседах")
         return
-    target = message.reply_to_message.from_user
     
     parts = message.text.split(maxsplit=3)
     
@@ -181,15 +180,6 @@ async def mute_handler(message: Message):
                 await message.answer(f"Пользователь {target_name} получил мут на {minutes} мин. Причина: {reason}")
             except Exception as e:
                 await message.answer(f"Ошибка: {e}")
-
-
-
-    
-  
-    if target.id == message.from_user.id:
-        await message.answer("Выдать себе мут нельзя!")
-        return
-    await message.answer(f"{target.full_name} получил мут на {minutes} мин.")
 
 @dp.message(F.text.startswith("/unmute"))
 async def unmute_handler(message: Message):
