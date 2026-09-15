@@ -467,11 +467,11 @@ async def pin_handler(message: Message):
     if not is_admin(message.from_user.id):
         await message.answer("Ошибка: У вас нет прав на выполнение этого действия")
         return
-    if not message.reply_to_message:
-        await message.answer("Ошибка: Ответьте на сообщение которое хотите закрепить")
-        return
     if message.chat.type == "private":
         await message.answer("Ошибка: Закреплять сообщения можно только в беседах")
+        return
+    if not message.reply_to_message:
+        await message.answer("Ошибка: Ответьте на сообщение которое хотите закрепить")
         return
     try:
         await bot.pin_chat_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
