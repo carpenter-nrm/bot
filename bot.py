@@ -274,7 +274,7 @@ async def unmute_handler(message: Message):
 
 @dp.message(Command('nicklist'))
 async def nicklist_handler(message: Message):
-    if not message.chat.type == "private":
+    if message.chat.type == "private":
         await message.answer("Ошибка: Просматривать список установленных ников можно только в беседах")
     if not await check_bot_admin(message, "can_pin_messages"):
         return
@@ -282,7 +282,7 @@ async def nicklist_handler(message: Message):
 
 @dp.message(Command('delete'))
 async def delete_handler(message: Message):
-    target_id = message.from_user.id
+    target = message.reply_to_message.from_user
     if not is_owner(message.from_user.id):
         await message.answer('Ошибка: У вас нет прав на выполнение этого действия')
         return
@@ -291,7 +291,7 @@ async def delete_handler(message: Message):
     if not message.reply_to_message:
         await message.answer("Ошибка: Ответь на сообщение то сообщение, которое хочешь удалить")
         return
-    if not can_punish(message.from_user.id, target_id):
+    if not can_punish(message.from_user.id, target.id):
         await message.answer("Ошибка: Ты не можешь удалить сообщение человека выше тебя по должности")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
@@ -320,7 +320,7 @@ async def kick_handler(message: Message):
         await message.answer("Ошибка: Ответь на сообщение того, кого хочешь кикнуть")
         return
     target_id = message.from_user.id
-    if not can_punish(message.from_user.id, target_id):
+    if not can_punish(message.from_user.id, target.id):
         await message.answer("Ошибка: Ты не можешь исключить человека выше тебя по должности")
         return
     parts = message.text.split()
@@ -356,7 +356,7 @@ async def ban_handler(message: Message):
         await message.answer("Ошибка: Себя забанить нельзя!")
         return
     target_id = message.from_user.id
-    if not can_punish(message.from_user.id, target_id):
+    if not can_punish(message.from_user.id, target.id):
         await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
         return
     if not await check_bot_admin(message, "can_pin_messages"):
@@ -408,7 +408,7 @@ async def warn_handler(message: Message):
         await message.answer("Ошибка: Выдать варн нельзя!")
         return
      target_id = message.from_user.id
-     if not can_punish(message.from_user.id, target_id):
+     if not can_punish(message.from_user.id, target.id):
         await message.answer("Ошибка: Ты не можешь выдать мут человеку выше тебя по должности")
         return
      if not await check_bot_admin(message, "can_pin_messages"):
