@@ -98,7 +98,7 @@ async def start_handler(message: Message):
 
 @dp.message(Command("help"))
 async def help_handler(message: Message):
-    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию о себе\n"'/nicklist - посмотреть ники участников\n''/nick - установить ник участнику беседы\n''/mute - выдать мут участнику беседы\n''/warn - выдать предупреждение участнику беседы\n''/kick - кикнуть участника беседы\n''/ban - забанить участника беседы\n''/unmute - снять бан чата участнику беседы\n''/unwarn - снять варн участнику беседы\n''/unban - снять бан участнику беседы\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/time - узнать сколько сейчас времени\n''/greetings - приветствие в беседе\n''/addgreetings - установить приветствие в беседе\n''/rules - правила беседы\n''/addrules - установить правила\n''/weather - узнать какая сейчас погода\n''/help - список команд')
+    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию о себе\n"'/nicklist - посмотреть ники участников\n''/nick - установить ник участнику беседы\n''/mute - выдать мут участнику беседы\n''/warn - выдать предупреждение участнику беседы\n''/kick - кикнуть участника беседы\n''/ban - забанить участника беседы\n''/unmute - снять бан чата участнику беседы\n''/unwarn - снять варн участнику беседы\n''/unban - снять бан участнику беседы\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/time - узнать сколько сейчас времени\n''/greetings - приветствие в беседе\n''/addgreetings - установить приветствие в беседе\n''/rules - правила беседы\n''/addrules - установить правила\n''/weather - узнать какая сейчас погода\n'"/top - топ участников по сообщениям\n"'/help - список команд')
 
 @dp.message(Command("time"))
 async def time_handler(message: Message):
@@ -249,8 +249,8 @@ async def ban_handler(message: Message):
                 days = int(arg)
             if days < 1:
                 days = 1
-                until = datetime.datetime.now() + timedelta(days=days)
-                days_text = f"на {days} дн."
+            until = datetime.datetime.now() + timedelta(days=days)
+            days_text = f"на {days} дн."
         except ValueError:
                 await message.answer("Формат: /ban или /ban 3d")
                 return
@@ -359,7 +359,7 @@ async def rules_handler(message: Message):
     await message.answer("В разработке")
 
 @dp.message(Command('addrules'))
-async def addgreetings_handler(message: Message):
+async def addruless_handler(message: Message):
      if not is_admin(message.from_user.id):
         await message.answer("У вас нет прав не выполнение этой команды.")
         return
@@ -369,9 +369,12 @@ async def addgreetings_handler(message: Message):
      await message.answer('В разработке')
 
 @dp.message(Command('weather'))
-async def rules_handler(message: Message):
+async def weather_handler(message: Message):
     await message.answer("В разработке")
-     
+
+@dp.message(Command('top'))
+async def top_handler(message: Message):
+    await message.answer("В разработке")
 
 @dp.message()
 async def unknown_handler(message: Message):
