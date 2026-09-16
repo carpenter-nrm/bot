@@ -128,6 +128,51 @@ def get_role(user_id):
     conn.close()
     return row[0] if row else 0
 
+def save_user(user_id, username, full_name):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT OR REPLACE INTO users (user_id, username, full_name, last_seen)
+        VALUES (?, ?, ?, datetime('now'))
+    """, (user_id, username or "", full_name))
+    conn.commit()
+    conn.close()
+
+def get_all_users(limit=50):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id, username, full_name FROM users ORDER BY last_seen DESC LIMIT ?",
+        (limit,)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+def find_users(query, limit=20):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    pattern = f"%{query.lower()}%"
+    cur.execute(
+        "SELECT user_id, username, full_name FROM users "
+        "WHERE LOWER(full_name) LIKE ? OR LOWER(username) LIKE ? "
+        "LIMIT ?",
+        (pattern, pattern, limit)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+class UserTrackerMiddleware(BaseMiddleware):
+    async def __call__(self, handler, event, data):
+        if hasattr(event, "from_user") and event.from_user:
+            save_user(
+                event.from_user.id,
+                event.from_user.username or "",
+                event.from_user.full_name
+            )
+        return await handler(event, data)
+
 @dp.message(Command("info"))
 async def info_handler(message: Message):
     if message.chat.type == "private":
@@ -813,6 +858,7 @@ async def unknown_handler(message: Message):
 async def main():
     print("Бот запущен...")
     init_db()
+    dp.message.middleware(UserTrackerMiddleware())
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
