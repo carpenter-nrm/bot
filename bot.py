@@ -1,3 +1,4 @@
+import sqlite3
 import asyncio
 import datetime
 from datetime import timedelta
@@ -14,7 +15,8 @@ TOKEN = "8646453142:AAFWIT1Adxm2v4jq0Ycaf11KJ6hWB_F_KLU"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-ROLES = {}
+DB_NAME = "bot.db"
+
 OWNER_ID = 732840192
 LEVELS = {
     "user": 0,
@@ -34,7 +36,7 @@ async def get_level(user_id, chat_id=None):
                 return 100
         except Exception:
             pass
-    return ROLES.get(user_id, 0)
+    return get_role(user_id)
 
 async def is_admin(user_id, chat_id=None):
     level = await get_level(user_id, chat_id)
@@ -51,6 +53,8 @@ async def is_owner(user_id, chat_id=None):
         except Exception:
             pass
     return False
+
+
 
 async def can_punish(admin_id, target_id, chat_id=None):
     admin_level = await get_level(admin_id, chat_id)
@@ -82,6 +86,47 @@ async def check_bot_admin(message, need_right=None):
             await message.answer(f"У меня нет права: «{right_name}»\n\nВыдайте мне права администратора чтобы я мог выполнять свои функции")
             return False
     return True
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    # Таблица юзеров
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            full_name TEXT,
+            last_seen TEXT
+        )
+    """)
+    # Таблица ролей
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS roles (
+            user_id INTEGER PRIMARY KEY,
+            level INTEGER
+        )
+    """)
+    conn.commit()
+    conn.close()
+    print("БД инициализирована")
+
+def set_role(user_id, level):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT OR REPLACE INTO roles (user_id, level) VALUES (?, ?)",
+        (user_id, level)
+    )
+    conn.commit()
+    conn.close()
+
+def get_role(user_id):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("SELECT level FROM roles WHERE user_id = ?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else 0
 
 @dp.message(Command("info"))
 async def info_handler(message: Message):
@@ -133,7 +178,7 @@ async def setrole_handler(message: Message):
     if role not in LEVELS:
         await message.answer(f"Ошибка: Такой роли не существует\n\nСписок всех существующих ролей:\n {', ' .join(LEVELS.keys())}")
         return
-    ROLES[target_id] = LEVELS[role]
+    set_role(target_id, LEVELS[role])
     if message.chat.type != "private" and role == "admin":
         try:
             await bot.promote_chat_member(
@@ -767,6 +812,7 @@ async def unknown_handler(message: Message):
 
 async def main():
     print("Бот запущен...")
+    init_db()
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
