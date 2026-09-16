@@ -12,6 +12,7 @@ from typing import Callable, Awaitable, Dict, Any
 
 
 TOKEN = os.getenv("BOT_TOKEN")
+print(f"Токен: {TOKEN[:15]}...{TOKEN[-5:] if TOKEN else 'None'}")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
