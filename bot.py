@@ -11,7 +11,7 @@ from aiogram.types import Message, ChatPermissions
 from typing import Callable, Awaitable, Dict, Any
 
 
-TOKEN = os.getenv("MY_BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
