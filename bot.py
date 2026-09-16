@@ -166,6 +166,20 @@ def find_users(query, limit=20):
     conn.close()
     return rows
 
+def find_user_id_by_username(username):
+    """Ищет user_id в БД по username"""
+    if username.startswith("@"):
+        username = username[1:]
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id, full_name FROM users WHERE LOWER(username) = ?",
+        (username.lower(),)
+    )
+    row = cur.start.fetchone()
+    conn.close()
+    return row if row else (None, None)
+
 class UserTrackerMiddleware(BaseMiddleware):
     async def __call__(self, handler, event, data):
         if hasattr(event, "from_user") and event.from_user:
@@ -540,33 +554,16 @@ async def mute_handler(message: Message):
     target_id = None
     target_name = target_input
     if target_input.startswith("@"):
-        username = target_input[1:]
-        try:
-            member = await bot.get_chat_member(
-                chat_id=message.chat.id,
-                user_id=username
-            )
-            target_id = member.user.id
-            target_name = member.user.full_name
-        except Exception:
-            await message.answer(
-                f"Ошмбка: Пользователь @{username} не найден в чате.\n\nПопробуйте через ID или reply на его сообщение.")
-            return
-    else:
-        try:
-            target_id = int(target_input)
-        except ValueError:
-            await message.answer("Ошибка: Вы не указали кому выдать мут\n\nИспользуйте @username или ID")
-            return
-
-        try:
-            member = await bot.get_chat_member(
-                chat_id=message.chat.id,
-                user_id=target_id
-            )
-            target_name = member.user.full_name
-        except Exception:
-            target_name = f"ID {target_id}"
+            username = target_input[1:]
+            db_id, db_name = find_user_id_by_username(username)
+            if db_id is None:
+                await message.answer(
+                    f"Не нашёл @{username} в базе бота.\n"
+                    f"Пусть юзер напишет боту /start в личку."
+                )
+                return
+            target_id = db_id
+            target_name = db_name or f"@{username}"
     if target_id == message.from_user.id:
         await message.answer("Ошибка: Выдать мут самому себе нельзя!")
         return
