@@ -176,6 +176,45 @@ class UserTrackerMiddleware(BaseMiddleware):
             )
         return await handler(event, data)
 
+@dp.message(Command("users"))
+async def users_handler(message: Message):
+    if not await is_admin(message.from_user.id, message.chat.id):
+        await message.answer("У вас нет прав")
+        return
+    rows = get_all_users(50)
+    if not rows:
+        await message.answer("Пока никто не писал боту")
+        return
+    text = "👥 Последние 50 юзеров:\n\n"
+    for uid, uname, fname in rows:
+        text += f"• {fname}"
+        if uname:
+            text += f" (@{uname})"
+        text += f" — {uid}\n"
+    await message.answer(text)
+
+@dp.message(Command("find"))
+async def find_handler(message: Message):
+    if not await is_admin(message.from_user.id, message.chat.id):
+        await message.answer("У вас нет прав")
+        return
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("Формат: /find имя или username")
+        return
+    query = parts[1]
+    rows = find_users(query, 20)
+    if not rows:
+        await message.answer("Никого не нашёл")
+        return
+    text = "🔍 Нашёл:\n\n"
+    for uid, uname, fname in rows:
+        text += f"• {fname}"
+        if uname:
+            text += f" (@{uname})"
+        text += f" — {uid}\n"
+    await message.answer(text)
+
 @dp.message(Command("info"))
 async def info_handler(message: Message):
     if message.chat.type == "private":
@@ -239,7 +278,7 @@ async def setrole_handler(message: Message):
             )
             await message.answer(f"Пользователь {target_id} теперь {role}")
         except Exception as e:
-            await message.asnwer("Ошибка: Выдать роль не удалось.")
+            await message.answer("Ошибка: Выдать роль не удалось.")
     else:
         await message.answer(f"Пользователь {target_id} теперь {role} ")
 
@@ -517,7 +556,7 @@ async def mute_handler(message: Message):
         try:
             target_id = int(target_input)
         except ValueError:
-            await message.asnwer("Ошибка: Вы не указали кому выдать мут\n\nИспользуйте @username или ID")
+            await message.answer("Ошибка: Вы не указали кому выдать мут\n\nИспользуйте @username или ID")
             return
 
         try:
@@ -841,7 +880,7 @@ async def pin_handler(message: Message):
         await bot.pin_chat_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
         await message.answer("Сообщение успешно закреплено")
     except Exception as e:
-        await message.asnwer(f"Ошибка: {e}")
+        await message.answer(f"Ошибка: {e}")
 
 @dp.message(Command('weather'))
 async def weather_handler(message: Message):
