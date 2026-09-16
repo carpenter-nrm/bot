@@ -1,6 +1,7 @@
 import sqlite3
 import asyncio
 import datetime
+import os
 from datetime import timedelta
 from aiogram import Bot, Dispatcher, F, BaseMiddleware, html
 from aiogram.client.default import DefaultBotProperties
@@ -10,12 +11,13 @@ from aiogram.types import Message, ChatPermissions
 from typing import Callable, Awaitable, Dict, Any
 
 
-TOKEN = "8646453142:AAFWIT1Adxm2v4jq0Ycaf11KJ6hWB_F_KLU"
+TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-DB_NAME = "bot.db"
+DB_DIR = os.getenv("DATA_DIR", ".")
+DB_NAME = os.path.join(DB_DIR, "bot.db")
 
 OWNER_ID = 732840192
 LEVELS = {
@@ -247,11 +249,11 @@ first = {"/info", '/time', "/weather"}
 @dp.message(CommandStart())
 async def start_handler(message: Message):
 
-    await message.answer("Добро пожаловать. Я — Chat Guard, административный ассистент. \n\nЯ предназначен для автоматизации управления участниками и поддержания порядка в чате.\n\nФункционал:\n• Система ников\n• Система предупреждений\n• Исключение из чата\n• Блокировка чата\n• Список участников чата с наказаниями\n\nДля подробного ознакомления с командами введите /help.\n\n-----------------------------------\nГораздо больше о боте вы можете узнать в нашем ТГК - https://t.me/botchatguard")
+    await message.answer("Добро пожаловать. Я — Chat Guard, административный ассистент. \n\nЯ предназначен для автоматизации управления участниками и поддержания порядка в чате.\n\nФункционал:\n• Система ников\n• Система предупреждений\n• Исключение из чата\n• Блокировка чата\n• Список участников чата с наказаниями\n\nДля подробного ознакомления с командами введите /help\n\n-----------------------------------\nГораздо больше о боте вы можете узнать в нашем ТГК - https://t.me/botchatguard")
 
 @dp.message(Command("help"))
 async def help_handler(message: Message):
-    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию об участнике чата\n"'/nicklist - посмотреть ники участников чата\n''/nick - установить ник участнику чата\n''/mute - выдать мут участнику чата\n''/warn - выдать предупреждение участнику чата\n''/kick - кикнуть участника чата\n''/ban - забанить участника чата\n''/unmute - снять бан чата участнику чата\n''/unwarn - снять варн участнику чата\n''/unban - снять бан участнику чата\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/greetings -посмотреть приветствие чата\n''/addgreetings - установить приветствие в чате\n''/rules - посмотреть правила чата\n''/addrules - установить правила чата\n''/delete - удалить сообщение участника чата\n''/pin - закрепить сообщение\n'"/top - топ участников по сообщениям в чате\n"'/time - узнать сколько сейчас времени\n''/weather - узнать какая сейчас погода\n''/help - список команд')
+    await message.answer("Список команд бота:\n\n"'/start - запуск бота\n'"/info - посмотреть информацию об участнике чата\n"'/nick - установить ник участнику чата\n''/nicklist - посмотреть ники участников чата\n''/mute - выдать мут участнику чата\n''/warn - выдать предупреждение участнику чата\n''/kick - кикнуть участника\n''/ban - забанить участника\n''/unmute - снять бан чата\n''/unwarn - снять варн участнику чата\n''/unban - снять бан участнику чата\n''/warnlist - список участников с варнами\n''/mutelist - список участников находившихся в муте\n''/banlist - список участников находившихся в бане\n''/greetings -посмотреть приветствие чата\n''/addgreetings - установить приветствие в чате\n''/rules - посмотреть правила чата\n''/addrules - установить правила чата\n''/delete - удалить сообщение участника чата\n''/pin - закрепить сообщение\n'"/top - топ участников по сообщениям в чате\n"'/time - узнать сколько сейчас времени\n''/weather - узнать какая сейчас погода\n''/help - список команд')
 
 @dp.message(Command("time"))
 async def time_handler(message: Message):
@@ -288,7 +290,7 @@ async def unmute_handler(message: Message):
         target_input = parts[1]
     else:
         await message.answer(
-            "Ошибка:\n\n Введите:\n"
+            "Ошибка:\n\nВведите:\n"
             "1) /unmute в ответ на сообщение того, кому хотите снять мут\n"
             "2) /unmute @username\n"
             "3) /unmute ID\n\n")
@@ -399,7 +401,7 @@ async def kick_handler(message: Message):
             reason = parts[2]
     else:
         await message.answer(
-            "Ошибка:\n\n Введите:\n"
+            "Ошибка:\n\nВведите:\n"
             "1) /kick [причина] в ответ на сообщение того, кого хотите кикнуть\n"
             "2) /kick @username [причина]\n"
             "3) /kick ID [причина]"
@@ -489,7 +491,7 @@ async def mute_handler(message: Message):
             reason = parts[3]
     else:
         await message.answer(
-            "Ошибка:\n\n Введите:\n"
+            "Ошибка:\n\nВведите:\n"
             "1) /mute [минуты] [причина] в ответ на сообщение того, кому хочешь выдать мут\n"
             "2) /mute @username [минуты] [причина]\n"
             "3) /mute ID [минуты] [причина]"
@@ -572,10 +574,10 @@ async def ban_handler(message: Message):
             reason = parts[3]
     else:
         await message.answer(
-            "Ошибка:\n\n Введите:\n"
-            "1) /ban [дни] причина в ответ на сообщение того, кого хотите забанить\n"
-            "2) /ban @username [дни] причина\n"
-            "3) /ban ID [дни] причина\n\n"
+            "Ошибка:\n\nВведите:\n"
+            "1) /ban [дни] [причина] в ответ на сообщение того, кого хотите забанить\n"
+            "2) /ban @username [дни] [причина]\n"
+            "3) /ban ID [дни] [причина]\n\n"
     
         )
         return
@@ -691,7 +693,7 @@ async def unban_handler(message: Message):
         target_input = parts[1]
     else:
         await message.answer(
-            "Ошибка:\n\n Введите:\n"
+            "Ошибка:\n\nВведите:\n"
             "1) /unban в ответ на сообщение того, кого хотите разбанить\n"
             "2) /unban @username\n"
             "3) /unban ID"
